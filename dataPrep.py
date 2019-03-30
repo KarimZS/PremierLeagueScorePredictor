@@ -1,42 +1,44 @@
 
 import os
-
+import numpy as np
 
 
 def main():
 	print("Hello World!")
 	history = populateHistory()
 	teamNames = getTeams(history)
-	print(len(teamNames))
+	featureTemplate,templateIndex = createFeatureTemplate(teamNames)
 	generateTrainTest(history,2016,0.6)
 
 def generateTrainTest(history,endDate,percentTrain):
 	dataLines = []
 	trainLines = []
-	tesLines = []
+	testLines = []
 	history.sort(key=lambda x:x.year)
 	for match in history:
-		print(match.year)
 		if int(match.year.split("-")[0]) > endDate:
-			return
+			break
 		else:
-			vectorHome = getFeatures(match.homeTeam,match.awayTeam,match.year,history,match.homeTeam)
-			vectorAway = getFeatures(match.homeTeam,match.awayTeam,match.year,history,match.awayTeam)
+			vectorHome = getFeatures(match.homeTeam,match.awayTeam,match.year,history,1)
+			vectorAway = getFeatures(match.homeTeam,match.awayTeam,match.year,history,0)
 			dataLines.append({vectorHome,match.homeGoals})
 			dataLines.append({vectorAway,match.awayGoals})
-	for i in len(history):
+	for i in range(len(history)):
 		if i <len(history)*percentTrain:
 			trainLines.append(dataLines[i])
 		else:
-			tesLines.append(dataLines[i])
+			testLines.append(dataLines[i])
+	print("size", len(trainLines))
+	print("size2", len(testLines))
 	printData(trainLines,"data/train.tsv")
-	printData(tesLines,"data/train.tsv")
+	printData(testLines,"data/test.tsv")
 
 def printData(dataLines,fileName):
-	file = open(fileName,"w")
-	for line in dataLines:
-		file.write(line[0],"\t",line[1])
+	file = open(fileName,"w+")
+	for input,output in dataLines:
+		file.write("%s \t %s \n"%(input,output))
 	file.close()
+
 def getTeams(history):
 	set = []
 	for match in history:
@@ -65,6 +67,52 @@ def parseFile(filename):
 		game = Game(lineSplit[0],lineSplit[1],lineSplit[2],lineSplit[3],lineSplit[4])
 		gameList.append(game)
 	return gameList
+
+def createFeatureTemplate(teams):
+	indexDict = {}
+	count = 0
+	for team in teams:
+		for team2 in teams:
+			indexDict[team+"#"+team2+"#"+"GF"+"#"+"last"+"home"]=count
+			count=count+1
+			indexDict[team+"#"+team2+"#"+"GF"+"#"+"last"+"away"]=count
+			count=count+1
+			indexDict[team+"#"+team2+"#"+"GFAvg"+"#"+"last"+"home"]=count
+			count=count+1
+			indexDict[team+"#"+team2+"#"+"GFAvg"+"#"+"last"+"away"]=count
+			count=count+1
+			indexDict[team+"#"+team2+"#"+"GF"+"#"+"last5"+"home"]=count
+			count=count+1
+			indexDict[team+"#"+team2+"#"+"GF"+"#"+"last5"+"away"]=count
+			count=count+1
+			indexDict[team+"#"+team2+"#"+"GFAvg"+"#"+"last5"+"home"]=count
+			count=count+1
+			indexDict[team+"#"+team2+"#"+"GFAvg"+"#"+"last5"+"away"]=count
+			count=count+1
+		indexDict[team + "#" + "GF" + "#" + "last1"] = count
+		count = count + 1
+		indexDict[team + "#" + "GF" + "#" + "last2"] = count
+		count = count + 1
+		indexDict[team + "#" + "GF" + "#" + "last3"] = count
+		count = count + 1
+		indexDict[team + "#" + "GF" + "#" + "last4"] = count
+		count = count + 1
+		indexDict[team + "#" + "GF" + "#" + "last5"] = count
+		count = count + 1
+		indexDict[team + "#" + "GA" + "#" + "last1"] = count
+		count = count + 1
+		indexDict[team + "#" + "GA" + "#" + "last2"] = count
+		count = count + 1
+		indexDict[team + "#" + "GA" + "#" + "last3"] = count
+		count = count + 1
+		indexDict[team + "#" + "GA" + "#" + "last4"] = count
+		count = count + 1
+		indexDict[team + "#" + "GA" + "#" + "last5"] = count
+		count = count + 1
+	print("count features",count)
+	templateVector = np.zeros(count)
+	return templateVector,indexDict
+
 
 def getFeatures(team1,team2,year,history,predictionTeam):
 
